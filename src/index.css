@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@theme {
+  --animate-marquee: marquee 30s linear infinite;
+
+  @keyframes marquee {
+    0% {
+      transform: translateX(100%);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+
+  --font-sans: "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* For digital signage, prevent any scrolling */
+  background-color: #F8F7F2; /* Neutral Bento background */
+  color: #1A1A1A;
+}
