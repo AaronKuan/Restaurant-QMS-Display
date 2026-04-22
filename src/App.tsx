@@ -12,14 +12,18 @@ export default function App() {
   }, []);
 
   // Queue state for demonstration
-  const [currentPickup, setCurrentPickup] = useState('A125');
-  const [completedNumbers, setCompletedNumbers] = useState([
-    'A124', 'A123', 'B089', 'B088', 'C045', 
-    'A122', 'C044', 'A121', 'B087'
-  ]);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [currentPickup, setCurrentPickup] = useState('');
+  const [completedNumbers, setCompletedNumbers] = useState<string[]>([]);
 
   // Simulate continuous random orders to demonstrate the live animation flow
   useEffect(() => {
+    if (!isDemoMode) {
+      setCurrentPickup('');
+      setCompletedNumbers([]);
+      return;
+    }
+
     const prefixes = ['A', 'B', 'C'];
     let isMounted = true;
     let timerId: NodeJS.Timeout;
@@ -34,7 +38,9 @@ export default function App() {
       setCurrentPickup(prev => {
         // Move current active to history, safely tracking keys to prevent duplicate react keys 
         // in random generation scenarios
-        setCompletedNumbers(comp => [prev, ...comp.filter(n => n !== prev)].slice(0, 12));
+        if (prev) {
+          setCompletedNumbers(comp => [prev, ...comp.filter(n => n !== prev)].slice(0, 15));
+        }
         return nextNum;
       });
 
@@ -43,15 +49,15 @@ export default function App() {
       timerId = setTimeout(triggerNextOrder, nextDelay);
     };
 
-    // Trigger the first one after a random delay
-    const initialDelay = Math.floor(Math.random() * 3000) + 2000;
+    // Trigger the first one after a quick delay when turned on
+    const initialDelay = Math.floor(Math.random() * 1000) + 500;
     timerId = setTimeout(triggerNextOrder, initialDelay);
 
     return () => {
       isMounted = false;
       clearTimeout(timerId);
     };
-  }, []);
+  }, [isDemoMode]);
 
   // Images for the ad section
   const adImage = "https://images.unsplash.com/photo-1544025162-8111140994d2?q=80&w=1280&h=720&auto=format&fit=crop";
@@ -92,7 +98,7 @@ export default function App() {
         <div className="w-[35%] h-full flex flex-col gap-[20px]">
           
           {/* Top Section: Pickup Now */}
-          <div className="flex-[0.55] bg-white rounded-[28px] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col relative overflow-hidden">
+          <div className="h-[40%] bg-white rounded-[28px] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col relative overflow-hidden shrink-0">
             <div className="flex items-center gap-2 mb-2">
               <div className="bg-[#22C55E]/10 p-[10px] rounded-full">
                 <BellRing size={24} className="text-[#22C55E]" strokeWidth={3} />
@@ -104,24 +110,26 @@ export default function App() {
 
             <div className="flex-1 overflow-hidden flex flex-col justify-center items-center relative">
               <AnimatePresence>
-                <motion.span
-                  key={currentPickup}
-                  initial={{ opacity: 0, scale: 0.5, y: -40 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 1, transition: { duration: 0 } }}
-                  transition={{ type: "spring", bounce: 0.75, duration: 1.2 }}
-                  className="text-[120px] font-[800] text-[#22C55E] tracking-[-4px] leading-none absolute"
-                >
-                  {currentPickup}
-                </motion.span>
+                {currentPickup && (
+                  <motion.span
+                    key={currentPickup}
+                    initial={{ opacity: 0, scale: 0.5, y: -40 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 1, transition: { duration: 0 } }}
+                    transition={{ type: "spring", bounce: 0.75, duration: 1.2 }}
+                    className="text-[120px] font-[800] text-[#22C55E] tracking-[-4px] leading-none absolute"
+                  >
+                    {currentPickup}
+                  </motion.span>
+                )}
               </AnimatePresence>
             </div>
           </div>
 
           {/* Bottom Section: Completed History (No Header) */}
-          <div className="flex-[0.45] bg-[#E8E6E1] rounded-[28px] p-8 flex flex-col">
+          <div className="flex-1 bg-[#E8E6E1] rounded-[28px] p-8 flex flex-col min-h-0 overflow-hidden shrink-0">
             <div className="flex-1 overflow-hidden flex flex-col justify-center">
-               <div className="grid grid-cols-3 gap-y-[28px] gap-x-[12px] content-start text-left pl-2">
+               <div className="grid grid-cols-3 gap-y-[12px] gap-x-[12px] content-center text-left pl-2 h-full">
                   {completedNumbers.map((num, idx) => (
                     <motion.div 
                       key={num}
@@ -154,6 +162,25 @@ export default function App() {
             Q
           </div>
           <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">SIGNAGE QMS</span>
+        </div>
+
+        {/* Demo Switch */}
+        <div className="flex items-center pl-[24px]">
+          <label className="flex items-center cursor-pointer group">
+            <div className="relative">
+              <input 
+                type="checkbox" 
+                className="sr-only" 
+                checked={isDemoMode}
+                onChange={() => setIsDemoMode(!isDemoMode)}
+              />
+              <div className={`w-12 h-6 rounded-full transition-colors duration-300 ease-in-out ${isDemoMode ? 'bg-[#22C55E]' : 'bg-[#E8E6E1]'}`}></div>
+              <div className={`absolute w-5 h-5 rounded-full bg-white transition-transform duration-300 ease-in-out shadow-sm top-[2px] ${isDemoMode ? 'translate-x-[26px]' : 'translate-x-[2px]'}`}></div>
+            </div>
+            <span className={`ml-3 font-[700] text-[13px] tracking-widest uppercase transition-colors duration-300 ${isDemoMode ? 'text-[#22C55E]' : 'text-[#999]'}`}>
+              Demo
+            </span>
+          </label>
         </div>
 
         {/* Empty space filling the center */}
