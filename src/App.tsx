@@ -103,12 +103,12 @@ export default function App() {
             </div>
 
             <div className="flex-1 overflow-hidden flex flex-col justify-center items-center relative">
-              <AnimatePresence mode="popLayout">
+              <AnimatePresence>
                 <motion.span
                   key={currentPickup}
                   initial={{ opacity: 0, scale: 0.5, y: -40 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 1.5, filter: "blur(10px)" }}
+                  exit={{ opacity: 0, scale: 1, transition: { duration: 0 } }}
                   transition={{ type: "spring", bounce: 0.75, duration: 1.2 }}
                   className="text-[120px] font-[800] text-[#22C55E] tracking-[-4px] leading-none absolute"
                 >
@@ -122,17 +122,14 @@ export default function App() {
           <div className="flex-[0.45] bg-[#E8E6E1] rounded-[28px] p-8 flex flex-col">
             <div className="flex-1 overflow-hidden flex flex-col justify-center">
                <div className="grid grid-cols-3 gap-y-[28px] gap-x-[12px] content-start text-left pl-2">
-                <AnimatePresence mode="popLayout">
                   {completedNumbers.map((num, idx) => (
                     <motion.div 
-                      layout
                       key={num}
-                      initial={{ opacity: 0, x: -30, scale: 0.8, color: "#22C55E" }}
+                      initial={{ opacity: 0, x: -20, scale: 0.8, color: "#22C55E" }}
                       animate={{ opacity: idx < 3 ? 0.8 : 0.3, x: 0, scale: 1, color: "#1A1A1A" }}
-                      exit={{ opacity: 0, scale: 0.5 }}
                       transition={{ 
-                        default: { type: "spring", bounce: 0.2, duration: 1.4 },
-                        color: { duration: 3.5, delay: 0.8, ease: "easeOut" }
+                        default: { type: "spring", bounce: 0.2, duration: 1.0 },
+                        color: { duration: 2.4, delay: 0.4, ease: "easeOut" }
                       }}
                       className="flex items-center"
                     >
@@ -141,7 +138,6 @@ export default function App() {
                       </span>
                     </motion.div>
                   ))}
-                </AnimatePresence>
               </div>
             </div>
           </div>
