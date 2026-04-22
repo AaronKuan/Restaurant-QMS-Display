@@ -39,7 +39,7 @@ export default function App() {
       const nextNum = `${randomPrefix}${randomNum}`;
       
       const nextItem = {
-        id: crypto.randomUUID(), // Absolute uniqueness
+        id: `id_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, // Fallback generic random unique ID
         num: nextNum
       };
       
