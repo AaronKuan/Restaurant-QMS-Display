@@ -140,7 +140,7 @@ export default function App() {
           </div>
 
           {/* Bottom Section: Completed History (No Header) */}
-          <div className="flex-1 bg-[#E8E6E1] rounded-[28px] p-8 flex flex-col min-h-0 overflow-hidden shrink-0">
+          <div className="flex-1 bg-[#E8E6E1] rounded-[28px] px-8 py-4 flex flex-col min-h-0 overflow-hidden shrink-0">
             <div className="flex-1 overflow-hidden flex flex-col justify-center">
                <div className="grid grid-cols-3 gap-y-[12px] gap-x-[12px] content-center text-left pl-2 h-full">
                   {queue.history.map((item, idx) => (
