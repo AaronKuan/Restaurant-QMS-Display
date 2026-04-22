@@ -127,13 +127,16 @@ export default function App() {
                     <motion.div 
                       layout
                       key={num}
-                      initial={{ opacity: 0, x: -30, scale: 0.8 }}
-                      animate={{ opacity: idx < 3 ? 0.8 : 0.3, x: 0, scale: 1 }}
+                      initial={{ opacity: 0, x: -30, scale: 0.8, color: "#22C55E" }}
+                      animate={{ opacity: idx < 3 ? 0.8 : 0.3, x: 0, scale: 1, color: "#1A1A1A" }}
                       exit={{ opacity: 0, scale: 0.5 }}
-                      transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
+                      transition={{ 
+                        default: { type: "spring", bounce: 0.2, duration: 1.4 },
+                        color: { duration: 3.5, delay: 0.8, ease: "easeOut" }
+                      }}
                       className="flex items-center"
                     >
-                      <span className="text-[36px] font-[800] text-[#1A1A1A] tracking-[-1px]">
+                      <span className="text-[36px] font-[800] tracking-[-1px]">
                         {num}
                       </span>
                     </motion.div>
