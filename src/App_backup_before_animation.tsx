@@ -13,17 +13,14 @@ export default function App() {
 
   // Queue state for demonstration
   const [isDemoMode, setIsDemoMode] = useState(false);
-  
-  type QueueItem = { id: string; num: string; isNew?: boolean };
-  const [queue, setQueue] = useState<{ current: QueueItem | null; history: QueueItem[] }>({
-    current: null,
-    history: []
-  });
+  const [currentPickup, setCurrentPickup] = useState('');
+  const [completedNumbers, setCompletedNumbers] = useState<string[]>([]);
 
   // Simulate continuous random orders to demonstrate the live animation flow
   useEffect(() => {
     if (!isDemoMode) {
-      setQueue({ current: null, history: [] });
+      setCurrentPickup('');
+      setCompletedNumbers([]);
       return;
     }
 
@@ -38,23 +35,13 @@ export default function App() {
       const randomNum = Math.floor(Math.random() * 900) + 100; // 100 to 999
       const nextNum = `${randomPrefix}${randomNum}`;
       
-      const nextItem = {
-        id: crypto.randomUUID(), // Absolute uniqueness
-        num: nextNum
-      };
-      
-      setQueue(prevQueue => {
-        let newHistory = [...prevQueue.history];
-        if (prevQueue.current) {
-           // Mark the item demoted to history as 'isNew: true', ensure old items are 'isNew: false'
-           const finishedItem = { ...prevQueue.current, isNew: true };
-           const olderHistory = newHistory.map(item => ({ ...item, isNew: false }));
-           newHistory = [finishedItem, ...olderHistory].slice(0, 15);
+      setCurrentPickup(prev => {
+        // Move current active to history, safely tracking keys to prevent duplicate react keys 
+        // in random generation scenarios
+        if (prev) {
+          setCompletedNumbers(comp => [prev, ...comp.filter(n => n !== prev)].slice(0, 15));
         }
-        return {
-          current: nextItem,
-          history: newHistory
-        };
+        return nextNum;
       });
 
       // Next delay randomly picked between 2000ms and 5000ms
@@ -123,16 +110,16 @@ export default function App() {
 
             <div className="flex-1 overflow-hidden flex flex-col justify-center items-center relative">
               <AnimatePresence>
-                {queue.current && (
+                {currentPickup && (
                   <motion.span
-                    key={queue.current.id}
+                    key={currentPickup}
                     initial={{ opacity: 0, scale: 0.5, y: -40 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 1, transition: { duration: 0 } }}
                     transition={{ type: "spring", bounce: 0.75, duration: 1.2 }}
                     className="text-[120px] font-[800] text-[#22C55E] tracking-[-4px] leading-none absolute"
                   >
-                    {queue.current.num}
+                    {currentPickup}
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -143,26 +130,19 @@ export default function App() {
           <div className="flex-1 bg-[#E8E6E1] rounded-[28px] p-8 flex flex-col min-h-0 overflow-hidden shrink-0">
             <div className="flex-1 overflow-hidden flex flex-col justify-center">
                <div className="grid grid-cols-3 gap-y-[12px] gap-x-[12px] content-center text-left pl-2 h-full">
-                  {queue.history.map((item, idx) => (
+                  {completedNumbers.map((num, idx) => (
                     <motion.div 
-                      layout
-                      key={item.id}
-                      initial={{ opacity: 0, x: -20, scale: 0.8 }}
-                      animate={{ opacity: idx < 3 ? 0.8 : 0.3, x: 0, scale: 1 }}
+                      key={num}
+                      initial={{ opacity: 0, x: -20, scale: 0.8, color: "#22C55E" }}
+                      animate={{ opacity: idx < 3 ? 0.8 : 0.3, x: 0, scale: 1, color: "#1A1A1A" }}
                       transition={{ 
-                        default: { type: "spring", bounce: 0.2, duration: 1.0 }
+                        default: { type: "spring", bounce: 0.2, duration: 1.0 },
+                        color: { duration: 2.4, delay: 0.4, ease: "easeOut" }
                       }}
                       className="flex items-center"
                     >
-                      {/* Conditional rendering for color animation. The layout shifting won't trigger re-rendering of this specific inner element */}
-                      <span 
-                        className={`text-[36px] font-[800] tracking-[-1px] ${
-                          item.isNew 
-                            ? 'animate-[fadeToBlack_2s_ease-out_forwards] text-[#22C55E]' 
-                            : 'text-[#1A1A1A]'
-                        }`}
-                      >
-                        {item.num}
+                      <span className="text-[36px] font-[800] tracking-[-1px]">
+                        {num}
                       </span>
                     </motion.div>
                   ))}
