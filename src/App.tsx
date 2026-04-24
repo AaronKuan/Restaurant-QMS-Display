@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BellRing, Utensils, CloudSun } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useBarcodeScanner } from './hooks/useBarcodeScanner';
 
 export default function App() {
   const [time, setTime] = useState(new Date());
@@ -20,10 +21,90 @@ export default function App() {
     history: []
   });
 
+  // Temporary Logger state for debugging (e.g. Barcode Scanning)
+  type LogEntry = { id: string; time: string; message: string };
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+
+  const addLog = (message: string) => {
+    setLogs(prev => {
+      const newLog = { 
+        id: `log_${Date.now()}_${Math.random().toString(36).substring(2,9)}`, 
+        time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }), 
+        message 
+      };
+      return [newLog, ...prev].slice(0, 100); // Keep last 100 logs
+    });
+  };
+
+  // Run hardware diagnostics on mount
+  useEffect(() => {
+    addLog('System Logs Initialized. Waiting for events...');
+  }, []);
+
+  const runDiagnostics = async () => {
+    try {
+      const ua = navigator.userAgent;
+      const androidMatch = ua.match(/Android\s([0-9\.]+)/);
+      const chromeMatch = ua.match(/(Chrome|CriOS|CrMo)\/([0-9\.]+)/);
+      
+      const os = androidMatch ? `Android ${androidMatch[1]}` : 'Unknown OS';
+      const browser = chromeMatch ? `Chrome/WebView ${chromeMatch[2]}` : 'Unknown Browser';
+      
+      // Extended Hardware Info (Using 'any' cast for non-standard APIs)
+      const cores = navigator.hardwareConcurrency || '?';
+      const ram = (navigator as any).deviceMemory || '?';
+      const conn = (navigator as any).connection;
+      const network = conn ? `${conn.effectiveType || 'unknown'} (Downlink: ${conn.downlink || '?'}Mbps)` : 'Unknown';
+
+      let storageStr = 'Unknown';
+      if (navigator.storage && navigator.storage.estimate) {
+        try {
+          const estimate = await navigator.storage.estimate();
+          const quotaMB = Math.round((estimate.quota || 0) / 1024 / 1024);
+          storageStr = `${quotaMB} MB (Browser Quota)`;
+        } catch(e) {
+           storageStr = 'Access Denied';
+        }
+      }
+
+      addLog(`=== [ SYSTEM INFO ] ===`);
+      addLog(`OS & Core: ${os} | ${browser}`);
+      addLog(`Hardware: ${cores} Cores | ${ram} GB RAM (Est.)`);
+      addLog(`Display: ${window.screen.width}x${window.screen.height} (Ratio: ${window.devicePixelRatio})`);
+      addLog(`Network: ${network}`);
+      addLog(`Storage: ${storageStr}`);
+      addLog(`User-Agent: ${ua}`);
+      addLog(`=====================`);
+    } catch (err) {
+      addLog(`Error fetching system info: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+
+  const handleScan = (scannedData: string) => {
+    addLog(`[SCANNER] SUCCESS: ${scannedData}`);
+    
+    setQueue(prevQueue => {
+      let newHistory = [...prevQueue.history];
+      if (prevQueue.current) {
+         const finishedItem = { ...prevQueue.current, isNew: true };
+         const olderHistory = newHistory.map(item => ({ ...item, isNew: false }));
+         newHistory = [finishedItem, ...olderHistory].slice(0, 15);
+      }
+      return {
+        current: {
+          id: `id_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          num: scannedData
+        },
+        history: newHistory
+      };
+    });
+  };
+
+  useBarcodeScanner({ onScan: handleScan });
+
   // Simulate continuous random orders to demonstrate the live animation flow
   useEffect(() => {
     if (!isDemoMode) {
-      setQueue({ current: null, history: [] });
       return;
     }
 
@@ -81,29 +162,49 @@ export default function App() {
       {/* Upper Section: Main Visual and Queue Panel */}
       <div className="flex-1 flex flex-row gap-6 min-h-0">
         
-        {/* Left Side: Main Visual / Ad Module */}
-        <div className="w-[65%] h-full relative rounded-[32px] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.05)] border-[8px] border-white flex flex-col">
-          <img 
-            src={adImage} 
-            alt="Delicious Restaurant Dish" 
-            className="absolute inset-0 w-full h-full object-cover"
-            referrerPolicy="no-referrer"
-          />
-          {/* Light gradient overlay for text readability matching the bento vibe */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/60 to-transparent pointer-events-none"></div>
+        {/* Left Side: Temporary System Logs Viewer for Debugging */}
+        <div className="w-[65%] h-full relative rounded-[32px] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.05)] border-[8px] border-white flex flex-col bg-[#1E1E1E] text-[#D4D4D4] p-6 font-mono">
+          <div className="flex border-b border-[#333] pb-4 mb-4 items-center justify-between shrink-0">
+             <h2 className="text-xl font-bold text-white flex items-center gap-2">
+               System Logs (Scanner Debugging)
+             </h2>
+             <div className="flex gap-2">
+               {/* Button to run hardware diagnostics */}
+               <button 
+                 onClick={runDiagnostics} 
+                 className="text-[13px] bg-[#3B82F6]/20 text-[#3B82F6] hover:bg-[#3B82F6]/30 px-3 py-1.5 rounded-lg transition-colors font-bold"
+               >
+                 SYSTEM INFO
+               </button>
+               {/* A button to test the logger */}
+               <button 
+                 onClick={() => addLog('Test event triggered manually!')} 
+                 className="text-[13px] bg-[#22C55E]/20 text-[#22C55E] hover:bg-[#22C55E]/30 px-3 py-1.5 rounded-lg transition-colors font-bold"
+               >
+                 Test
+               </button>
+               <button 
+                 onClick={() => setLogs([])} 
+                 className="text-[13px] bg-[#333] text-white hover:bg-[#444] px-3 py-1.5 rounded-lg transition-colors"
+               >
+                 Clear Logs
+               </button>
+             </div>
+          </div>
           
-          {/* Branding / minimal overlay */}
-          <div className="absolute inset-0 p-[60px] flex flex-col justify-center pointer-events-none">
-            <span className="uppercase tracking-[0.2em] text-[14px] font-[700] text-[#5B3E31] mb-3">
-              Fresh & Seasonal
-            </span>
-            <h1 className="text-[56px] font-[800] leading-[1.1] text-[#3D2B1F] m-0">
-              Premium<br />Quality
-            </h1>
-            <p className="text-[18px] text-[#5B3E31] mt-5 font-[500] opacity-80">
-              Locally sourced organic ingredients,<br />prepared fresh for you every day.
-            </p>
-            <div className="mt-10 w-[120px] h-[4px] bg-[#3D2B1F] rounded-[2px]"></div>
+          <div className="flex-1 overflow-y-auto flex flex-col gap-2">
+             {logs.length === 0 ? (
+               <div className="h-full flex items-center justify-center">
+                 <p className="opacity-40 italic text-[16px]">Ready to receive barcode scanner input...</p>
+               </div>
+             ) : (
+               logs.map(log => (
+                 <div key={log.id} className="flex gap-4 border-b border-white/5 pb-2">
+                   <span className="text-[#888] shrink-0">[{log.time}]</span>
+                   <span className="break-all text-white font-[500]">{log.message}</span>
+                 </div>
+               ))
+             )}
           </div>
         </div>
 
