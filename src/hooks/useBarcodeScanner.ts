@@ -16,12 +16,6 @@ export function useBarcodeScanner({ onScan, timeout = 500 }: UseBarcodeScannerOp
   }, [onScan]);
 
   useEffect(() => {
-    window.focus();
-
-    const handleMouseDown = () => {
-      window.focus();
-    };
-
     const handleKeyDown = (e: KeyboardEvent) => {
       const currentTime = Date.now();
 
@@ -48,12 +42,13 @@ export function useBarcodeScanner({ onScan, timeout = 500 }: UseBarcodeScannerOp
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('mousedown', handleMouseDown);
+    // Attach to `document` strictly using capture phase.
+    // This allows keydown events to be globally intercepted without losing them 
+    // to other inputs or body focus issues on Android WebViews.
+    document.addEventListener('keydown', handleKeyDown, { capture: true });
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('keydown', handleKeyDown, { capture: true });
     };
   }, [timeout]);
 }
