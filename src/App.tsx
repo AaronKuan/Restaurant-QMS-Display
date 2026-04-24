@@ -14,7 +14,6 @@ export default function App() {
 
   // Queue state for demonstration
   const [isDemoMode, setIsDemoMode] = useState(false);
-  const [paintToggle, setPaintToggle] = useState(false);
   
   type QueueItem = { id: string; num: string; isNew?: boolean };
   const [queue, setQueue] = useState<{ current: QueueItem | null; history: QueueItem[] }>({
@@ -40,6 +39,43 @@ export default function App() {
   // Run hardware diagnostics on mount
   useEffect(() => {
     addLog('System Logs Initialized. Waiting for events...');
+  }, []);
+
+  // Global Focus Initialization
+  useEffect(() => {
+    // 1. Ghost Input initialization
+    const initFocus = () => {
+      const ghostInput = document.createElement('input');
+      ghostInput.setAttribute('type', 'text');
+      ghostInput.setAttribute('readonly', 'readonly'); 
+      ghostInput.style.position = 'absolute';
+      ghostInput.style.opacity = '0';
+      ghostInput.style.pointerEvents = 'none';
+      
+      document.body.appendChild(ghostInput);
+      ghostInput.focus();
+      
+      setTimeout(() => {
+        window.focus();
+        if (document.body.contains(ghostInput)) {
+          document.body.removeChild(ghostInput);
+        }
+        addLog('[FOCUS] Global focus initialized on mount (Ghost Input)');
+      }, 100);
+    };
+
+    initFocus();
+
+    // 2. Periodic Focus Check
+    const focusInterval = setInterval(() => {
+      if (!document.hasFocus()) {
+        window.focus();
+        addLog('[FOCUS] Lost focus detected, automatically re-focused window');
+      }
+    }, 5000);
+
+    return () => clearInterval(focusInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const runDiagnostics = async () => {
@@ -99,36 +135,6 @@ export default function App() {
         history: newHistory
       };
     });
-
-    // --- Android WebView Repaint Hack (Option D) ---
-    // Combination of Dummy Focus to wake up compositor + Hash Navigation
-    const triggerRepaintWakeup = () => {
-      // 1. Dummy focus strategy
-      const dummyInput = document.createElement('input');
-      dummyInput.setAttribute('type', 'text');
-      dummyInput.setAttribute('readonly', 'readonly'); // Avoid triggering soft keyboard
-      dummyInput.style.position = 'absolute';
-      dummyInput.style.opacity = '0';
-      dummyInput.style.top = '-9999px';
-      
-      document.body.appendChild(dummyInput);
-      dummyInput.focus();
-      
-      // 2. Navigation hash strategy
-      const oldHash = window.location.hash;
-      window.location.hash = '#wake';
-      
-      setTimeout(() => {
-        dummyInput.blur();
-        if (document.body.contains(dummyInput)) {
-          document.body.removeChild(dummyInput);
-        }
-        // Revert hash purely in History API without triggering a real jump
-        window.history.replaceState(null, '', window.location.pathname + window.location.search + oldHash);
-      }, 50);
-    };
-
-    triggerRepaintWakeup();
   };
 
   useBarcodeScanner({ onScan: handleScan });
@@ -313,14 +319,8 @@ export default function App() {
           <div className="w-[36px] h-[36px] bg-[#3D2B1F] rounded-[8px] flex items-center justify-center text-white font-[900] text-[18px]">
             Q
           </div>
-          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.4</span>
+          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.5</span>
         </div>
-
-        {/* Repaint Hack Element */}
-        <div 
-          className="absolute pointer-events-none" 
-          style={{ width: '1px', height: '1px', opacity: 0.01, transform: paintToggle ? 'translateZ(1px)' : 'translateZ(0px)' }}
-        />
 
         {/* Demo Switch */}
         <div className="flex items-center pl-[24px]">
