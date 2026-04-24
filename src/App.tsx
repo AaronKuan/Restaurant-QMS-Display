@@ -15,7 +15,15 @@ export default function App() {
   // Queue state for demonstration
   const [isDemoMode, setIsDemoMode] = useState(false);
   
-  type QueueItem = { id: string; num: string; isNew?: boolean };
+  type QueueItem = {
+    id: string;
+    num: string;
+    isNew?: boolean;
+    orderType?: string;
+    status?: string;
+    uiState?: 'active' | 'inactive';
+    timestamp?: number;
+  };
   const [queue, setQueue] = useState<{ current: QueueItem | null; history: QueueItem[] }>({
     current: null,
     history: []
@@ -83,22 +91,112 @@ export default function App() {
   const handleScan = (scannedData: string) => {
     addLog(`[SCANNER] SUCCESS: ${scannedData}`);
     
+    // Parse the input: Pickup_Number, Order_Type, Status
+    const parts = scannedData.split(',');
+    const num = parts[0]?.trim();
+    const orderType = parts[1]?.trim() || '';
+    const status = parts[2]?.trim() || '';
+
+    if (!num) return;
+    
     setQueue(prevQueue => {
+      let newCurrent = prevQueue.current;
       let newHistory = [...prevQueue.history];
-      if (prevQueue.current) {
-         const finishedItem = { ...prevQueue.current, isNew: true };
-         const olderHistory = newHistory.map(item => ({ ...item, isNew: false }));
-         newHistory = [finishedItem, ...olderHistory].slice(0, 15);
+
+      const isCurrent = newCurrent?.num === num;
+      const historyIndex = newHistory.findIndex(o => o.num === num);
+      const existingHistory = historyIndex >= 0 ? newHistory[historyIndex] : null;
+
+      const newItem: QueueItem = {
+        id: `id_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        num,
+        orderType,
+        status,
+        isNew: true,
+      };
+
+      if (status === '0' || status === '1' || status === '2') {
+        // Explicit move to List (active)
+        if (isCurrent) {
+          newCurrent = null;
+        }
+        if (existingHistory) {
+          newHistory.splice(historyIndex, 1);
+        }
+        newItem.uiState = 'active';
+        newItem.timestamp = Date.now();
+        newHistory = [newItem, ...newHistory].slice(0, 15);
+      } else if (status === '3') {
+        // Explicit move to Current
+        if (existingHistory) {
+          newHistory.splice(historyIndex, 1);
+        }
+        if (newCurrent && newCurrent.num !== num) {
+          newHistory = [{ ...newCurrent, uiState: 'active', timestamp: Date.now(), isNew: false }, ...newHistory].slice(0, 15);
+        }
+        newCurrent = newItem;
+      } else {
+        // Cycle Logic without explicit status
+        if (!isCurrent && !existingHistory) {
+          // First scan: to Current
+          if (newCurrent) {
+            newHistory = [{ ...newCurrent, uiState: 'active', timestamp: Date.now(), isNew: false }, ...newHistory].slice(0, 15);
+          }
+          newCurrent = newItem;
+        } else if (isCurrent) {
+          // Second scan: to History Active
+          newCurrent = null;
+          newItem.uiState = 'active';
+          newItem.timestamp = Date.now();
+          newHistory = [newItem, ...newHistory].slice(0, 15);
+        } else if (existingHistory) {
+          if (existingHistory.uiState !== 'inactive') { 
+            // Third scan: to History Inactive
+            newHistory.splice(historyIndex, 1);
+            newItem.uiState = 'inactive';
+            newItem.timestamp = Date.now();
+            newHistory = [...newHistory, newItem].slice(0, 15);
+          } else {
+            // Fourth scan: to Current (reset loop)
+            newHistory.splice(historyIndex, 1);
+            if (newCurrent) {
+              newHistory = [{ ...newCurrent, uiState: 'active', timestamp: Date.now(), isNew: false }, ...newHistory].slice(0, 15);
+            }
+            newCurrent = newItem;
+          }
+        }
       }
+
       return {
-        current: {
-          id: `id_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-          num: scannedData
-        },
-        history: newHistory
+        current: newCurrent,
+        history: newHistory.map(item => item.id === newItem.id ? item : { ...item, isNew: false })
       };
     });
   };
+
+  // 120s timeout checker for active history items
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setQueue(prev => {
+        let changed = false;
+        const now = Date.now();
+        const newHistory = prev.history.map(item => {
+          if (item.uiState === 'active' && item.timestamp && (now - item.timestamp >= 120000)) {
+            changed = true;
+            return { ...item, uiState: 'inactive' as const };
+          }
+          return item;
+        });
+
+        if (changed) {
+          return { ...prev, history: newHistory };
+        }
+        return prev;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useBarcodeScanner({ onScan: handleScan });
 
@@ -252,7 +350,7 @@ export default function App() {
                       layout
                       key={item.id}
                       initial={{ opacity: 0, x: -20, scale: 0.8 }}
-                      animate={{ opacity: idx < 3 ? 0.8 : 0.3, x: 0, scale: 1 }}
+                      animate={{ opacity: item.uiState === 'inactive' ? 0.2 : (idx < 3 ? 0.8 : 0.4), x: 0, scale: 1 }}
                       transition={{ 
                         default: { type: "spring", bounce: 0.2, duration: 1.0 }
                       }}
@@ -285,7 +383,7 @@ export default function App() {
           <div className="w-[36px] h-[36px] bg-[#3D2B1F] rounded-[8px] flex items-center justify-center text-white font-[900] text-[18px]">
             Q
           </div>
-          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.7</span>
+          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.8</span>
         </div>
 
         {/* Demo Switch */}
