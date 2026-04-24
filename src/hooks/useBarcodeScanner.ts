@@ -28,6 +28,7 @@ export function useBarcodeScanner({ onScan, timeout = 500 }: UseBarcodeScannerOp
 
       // When Enter is pressed, trigger callback if buffer has data
       if (e.key === 'Enter') {
+        e.preventDefault();
         if (bufferRef.current.length > 0) {
           onScanRef.current(bufferRef.current);
           bufferRef.current = ''; // Clear buffer immediately after scan

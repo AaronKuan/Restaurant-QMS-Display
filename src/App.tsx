@@ -100,27 +100,35 @@ export default function App() {
       };
     });
 
-    // --- Android WebView Repaint Hack (Option C) ---
-    // Force global repaint via Scroll & Style Recalculation
-    // This addresses severe WebView throttles on Kiosks where touch hasn't occurred.
-    setTimeout(() => {
-      // 1. Scroll slightly to wake up the compositor
-      window.scrollBy(0, 1);
-      window.scrollBy(0, -1);
+    // --- Android WebView Repaint Hack (Option D) ---
+    // Combination of Dummy Focus to wake up compositor + Hash Navigation
+    const triggerRepaintWakeup = () => {
+      // 1. Dummy focus strategy
+      const dummyInput = document.createElement('input');
+      dummyInput.setAttribute('type', 'text');
+      dummyInput.setAttribute('readonly', 'readonly'); // Avoid triggering soft keyboard
+      dummyInput.style.position = 'absolute';
+      dummyInput.style.opacity = '0';
+      dummyInput.style.top = '-9999px';
       
-      // 2. Inject and remove a style tag to force a global style recalculation & layout
-      const style = document.createElement('style');
-      style.textContent = `body { transform: translateZ(0.0001px); }`;
-      document.head.appendChild(style);
+      document.body.appendChild(dummyInput);
+      dummyInput.focus();
       
-      // Remove it cleanly next tick
-      requestAnimationFrame(() => {
-         // Also check if node is still in head before removing
-         if (document.head.contains(style)) {
-           document.head.removeChild(style);
-         }
-      });
-    }, 10);
+      // 2. Navigation hash strategy
+      const oldHash = window.location.hash;
+      window.location.hash = '#wake';
+      
+      setTimeout(() => {
+        dummyInput.blur();
+        if (document.body.contains(dummyInput)) {
+          document.body.removeChild(dummyInput);
+        }
+        // Revert hash purely in History API without triggering a real jump
+        window.history.replaceState(null, '', window.location.pathname + window.location.search + oldHash);
+      }, 50);
+    };
+
+    triggerRepaintWakeup();
   };
 
   useBarcodeScanner({ onScan: handleScan });
@@ -305,7 +313,7 @@ export default function App() {
           <div className="w-[36px] h-[36px] bg-[#3D2B1F] rounded-[8px] flex items-center justify-center text-white font-[900] text-[18px]">
             Q
           </div>
-          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.3</span>
+          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.4</span>
         </div>
 
         {/* Repaint Hack Element */}
