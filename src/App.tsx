@@ -115,81 +115,64 @@ export default function App() {
         isNew: true,
       };
 
-      if (status === '0' || status === '1' || status === '2') {
-        // Explicit move to List (active)
-        if (isCurrent) {
-          newCurrent = null;
-        }
-        if (existingHistory) {
-          newHistory.splice(historyIndex, 1);
-        }
-        newItem.uiState = 'active';
-        newItem.timestamp = Date.now();
-        newHistory = [newItem, ...newHistory].slice(0, 15);
-      } else if (status === '3') {
-        // Explicit move to Current
-        if (existingHistory) {
-          newHistory.splice(historyIndex, 1);
-        }
-        if (newCurrent && newCurrent.num !== num) {
-          newHistory = [{ ...newCurrent, uiState: 'active', timestamp: Date.now(), isNew: false }, ...newHistory].slice(0, 15);
-        }
-        newCurrent = newItem;
+      if (status === '0') {
+        // 狀態為0：徹底結單，直接從畫面移除
+        if (isCurrent) newCurrent = null;
+        if (existingHistory) newHistory.splice(historyIndex, 1);
       } else {
-        // Cycle Logic without explicit status
         if (!isCurrent && !existingHistory) {
-          // First scan: to Current
+          // 第一次掃描：進入「請取餐」(Current)
           if (newCurrent) {
-            newHistory = [{ ...newCurrent, uiState: 'active', timestamp: Date.now(), isNew: false }, ...newHistory].slice(0, 15);
+            newHistory = [{ ...newCurrent, uiState: 'active', isNew: false }, ...newHistory].slice(0, 100);
           }
-          newCurrent = newItem;
-        } else if (isCurrent) {
-          // Second scan: to History Active
-          newCurrent = null;
-          newItem.uiState = 'active';
           newItem.timestamp = Date.now();
-          newHistory = [newItem, ...newHistory].slice(0, 15);
-        } else if (existingHistory) {
-          if (existingHistory.uiState !== 'inactive') { 
-            // Third scan: to History Inactive
-            newHistory.splice(historyIndex, 1);
-            newItem.uiState = 'inactive';
-            newItem.timestamp = Date.now();
-            newHistory = [...newHistory, newItem].slice(0, 15);
-          } else {
-            // Fourth scan: to Current (reset loop)
-            newHistory.splice(historyIndex, 1);
-            if (newCurrent) {
-              newHistory = [{ ...newCurrent, uiState: 'active', timestamp: Date.now(), isNew: false }, ...newHistory].slice(0, 15);
-            }
-            newCurrent = newItem;
-          }
+          newItem.uiState = 'active';
+          newCurrent = newItem;
+        } else {
+          // 第二次掃描：不管是否在 Current 或 History，都直接從畫面完全移除結案
+          if (isCurrent) newCurrent = null;
+          if (existingHistory) newHistory.splice(historyIndex, 1);
         }
       }
 
       return {
         current: newCurrent,
-        history: newHistory.map(item => item.id === newItem.id ? item : { ...item, isNew: false })
+        history: newHistory.map(item => ({ ...item, isNew: false }))
       };
     });
   };
 
-  // 120s timeout checker for active history items
+  // 狀態維持與超時機制 (20秒與120秒規則)
   useEffect(() => {
     const interval = setInterval(() => {
       setQueue(prev => {
-        let changed = false;
         const now = Date.now();
-        const newHistory = prev.history.map(item => {
-          if (item.uiState === 'active' && item.timestamp && (now - item.timestamp >= 120000)) {
-            changed = true;
+        let currentChanged = false;
+        let historyChanged = false;
+
+        let newCurrent = prev.current;
+        let newHistory = [...prev.history];
+
+        // 規則 1：請取餐區（Current）最久停留 20 秒，自動移至下方清單
+        if (newCurrent && newCurrent.timestamp && (now - newCurrent.timestamp >= 20000)) {
+          const finishedItem = { ...newCurrent, isNew: true };
+          newHistory = [finishedItem, ...newHistory.map(item => ({...item, isNew: false}))].slice(0, 100);
+          newCurrent = null;
+          currentChanged = true;
+          historyChanged = true;
+        }
+
+        // 規則 2：120 秒超時轉淡 (出現在請取餐與下方清單合計)
+        const updatedHistory = newHistory.map(item => {
+          if (item.uiState !== 'inactive' && item.timestamp && (now - item.timestamp >= 120000)) {
+            historyChanged = true;
             return { ...item, uiState: 'inactive' as const };
           }
           return item;
         });
 
-        if (changed) {
-          return { ...prev, history: newHistory };
+        if (currentChanged || historyChanged) {
+          return { current: newCurrent, history: updatedHistory };
         }
         return prev;
       });
@@ -199,6 +182,27 @@ export default function App() {
   }, []);
 
   useBarcodeScanner({ onScan: handleScan });
+
+  // History Pagination Logic
+  const ITEMS_PER_PAGE = 15;
+  const [currentPage, setCurrentPage] = useState(0);
+  const totalPages = Math.ceil(queue.history.length / ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    if (totalPages <= 1) {
+      if (currentPage !== 0) setCurrentPage(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setCurrentPage((prev) => (prev + 1) % totalPages);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [totalPages, currentPage]);
+
+  const displayedHistory = queue.history.slice(
+    currentPage * ITEMS_PER_PAGE,
+    (currentPage + 1) * ITEMS_PER_PAGE
+  );
 
   // Simulate continuous random orders to demonstrate the live animation flow
   useEffect(() => {
@@ -217,9 +221,11 @@ export default function App() {
       const randomNum = Math.floor(Math.random() * 900) + 100; // 100 to 999
       const nextNum = `${randomPrefix}${randomNum}`;
       
-      const nextItem = {
+      const nextItem: QueueItem = {
         id: `id_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, // Fallback generic random unique ID
-        num: nextNum
+        num: nextNum,
+        timestamp: Date.now(),
+        uiState: 'active'
       };
       
       setQueue(prevQueue => {
@@ -228,7 +234,7 @@ export default function App() {
            // Mark the item demoted to history as 'isNew: true', ensure old items are 'isNew: false'
            const finishedItem = { ...prevQueue.current, isNew: true };
            const olderHistory = newHistory.map(item => ({ ...item, isNew: false }));
-           newHistory = [finishedItem, ...olderHistory].slice(0, 15);
+           newHistory = [finishedItem, ...olderHistory].slice(0, 100);
         }
         return {
           current: nextItem,
@@ -343,14 +349,21 @@ export default function App() {
 
           {/* Bottom Section: Completed History (No Header) */}
           <div className="flex-1 bg-[#E8E6E1] rounded-[28px] px-8 py-4 flex flex-col min-h-0 overflow-hidden shrink-0">
+            {totalPages > 1 && (
+              <div className="flex justify-center gap-2 pb-2">
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <div key={i} className={`w-2 h-2 rounded-full transition-colors duration-300 ${i === currentPage ? 'bg-[#1A1A1A]' : 'bg-[#1A1A1A]/20'}`} />
+                ))}
+              </div>
+            )}
             <div className="flex-1 overflow-hidden flex flex-col justify-center">
                <div className="grid grid-cols-3 gap-y-[12px] gap-x-[12px] content-center text-left pl-2 h-full">
-                  {queue.history.map((item, idx) => (
+                  {displayedHistory.map((item, idx) => (
                     <motion.div 
                       layout
                       key={item.id}
                       initial={{ opacity: 0, x: -20, scale: 0.8 }}
-                      animate={{ opacity: item.uiState === 'inactive' ? 0.2 : (idx < 3 ? 0.8 : 0.4), x: 0, scale: 1 }}
+                      animate={{ opacity: item.uiState === 'inactive' ? 0.2 : 0.8, x: 0, scale: 1 }}
                       transition={{ 
                         default: { type: "spring", bounce: 0.2, duration: 1.0 }
                       }}
@@ -383,7 +396,7 @@ export default function App() {
           <div className="w-[36px] h-[36px] bg-[#3D2B1F] rounded-[8px] flex items-center justify-center text-white font-[900] text-[18px]">
             Q
           </div>
-          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.8</span>
+          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.10</span>
         </div>
 
         {/* Demo Switch */}
