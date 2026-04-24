@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { BellRing, Utensils, CloudSun } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useBarcodeScanner } from './hooks/useBarcodeScanner';
 
 export default function App() {
   const [time, setTime] = useState(new Date());
@@ -14,6 +13,8 @@ export default function App() {
 
   // Queue state for demonstration
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
   
   type QueueItem = { id: string; num: string; isNew?: boolean };
   const [queue, setQueue] = useState<{ current: QueueItem | null; history: QueueItem[] }>({
@@ -41,42 +42,38 @@ export default function App() {
     addLog('System Logs Initialized. Waiting for events...');
   }, []);
 
-  // Global Focus Initialization
+  // Global Focus Initialization - Hidden Input Pattern
   useEffect(() => {
-    // 1. Ghost Input initialization
-    const initFocus = () => {
-      const ghostInput = document.createElement('input');
-      ghostInput.setAttribute('type', 'text');
-      ghostInput.setAttribute('readonly', 'readonly'); 
-      ghostInput.style.position = 'absolute';
-      ghostInput.style.opacity = '0';
-      ghostInput.style.pointerEvents = 'none';
-      
-      document.body.appendChild(ghostInput);
-      ghostInput.focus();
-      
-      setTimeout(() => {
-        window.focus();
-        if (document.body.contains(ghostInput)) {
-          document.body.removeChild(ghostInput);
-        }
-        addLog('[FOCUS] Global focus initialized on mount (Ghost Input)');
-      }, 100);
+    // 確保輸入框始終保持焦點
+    const keepFocus = () => {
+      if (document.activeElement !== inputRef.current) {
+        inputRef.current?.focus();
+      }
     };
 
-    initFocus();
+    // 初始強制對焦
+    setTimeout(keepFocus, 100);
 
-    // 2. Periodic Focus Check
-    const focusInterval = setInterval(() => {
-      if (!document.hasFocus()) {
-        window.focus();
-        addLog('[FOCUS] Lost focus detected, automatically re-focused window');
-      }
-    }, 5000);
+    // 點擊畫面任何地方都把焦點搶回來
+    document.addEventListener('click', keepFocus);
+    
+    // 定期檢查焦點 (防止被 WebView 其他行為搶走)
+    const focusInterval = setInterval(keepFocus, 3000);
 
-    return () => clearInterval(focusInterval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      document.removeEventListener('click', keepFocus);
+      clearInterval(focusInterval);
+    };
   }, []);
+
+  // 處理隱藏輸入表單的提交 (Barcode Scanner 都在最後送出 Enter)
+  const handleScannerSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputValue.trim()) {
+      handleScan(inputValue.trim());
+      setInputValue(''); // 清空準備下一次掃描
+    }
+  };
 
   const runDiagnostics = async () => {
     try {
@@ -137,8 +134,6 @@ export default function App() {
     });
   };
 
-  useBarcodeScanner({ onScan: handleScan });
-
   // Simulate continuous random orders to demonstrate the live animation flow
   useEffect(() => {
     if (!isDemoMode) {
@@ -194,8 +189,28 @@ export default function App() {
   const adImage = "https://images.unsplash.com/photo-1544025162-8111140994d2?q=80&w=1280&h=720&auto=format&fit=crop";
 
   return (
-    <div className="h-screen w-screen flex flex-col p-6 gap-6 font-sans text-[#1A1A1A] bg-[#F8F7F2] overflow-hidden box-border">
+    <div 
+      className="h-screen w-screen flex flex-col p-6 gap-6 font-sans text-[#1A1A1A] bg-[#F8F7F2] overflow-hidden box-border"
+      onClick={() => inputRef.current?.focus()}
+    >
       
+      {/* Hidden Form for Barcode Scanner */}
+      <form onSubmit={handleScannerSubmit} className="absolute opacity-0 pointer-events-none">
+        <input
+          ref={inputRef}
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onBlur={() => {
+            // 微小延遲後強制搶回焦點
+            setTimeout(() => inputRef.current?.focus(), 10);
+          }}
+          inputMode="none" /* 防止 Android 虛擬鍵盤彈出 */
+          autoFocus
+          autoComplete="off"
+        />
+      </form>
+
       {/* Upper Section: Main Visual and Queue Panel */}
       <div className="flex-1 flex flex-row gap-6 min-h-0">
         
@@ -319,7 +334,7 @@ export default function App() {
           <div className="w-[36px] h-[36px] bg-[#3D2B1F] rounded-[8px] flex items-center justify-center text-white font-[900] text-[18px]">
             Q
           </div>
-          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.5</span>
+          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.6</span>
         </div>
 
         {/* Demo Switch */}
