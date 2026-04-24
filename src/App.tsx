@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { flushSync } from 'react-dom';
 import { BellRing, Utensils, CloudSun } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useBarcodeScanner } from './hooks/useBarcodeScanner';
@@ -82,25 +81,41 @@ export default function App() {
   };
 
   const handleScan = (scannedData: string) => {
-    flushSync(() => {
-      addLog(`[SCANNER] SUCCESS: ${scannedData}`);
-      
-      setQueue(prevQueue => {
-        let newHistory = [...prevQueue.history];
-        if (prevQueue.current) {
-           const finishedItem = { ...prevQueue.current, isNew: true };
-           const olderHistory = newHistory.map(item => ({ ...item, isNew: false }));
-           newHistory = [finishedItem, ...olderHistory].slice(0, 15);
-        }
-        return {
-          current: {
-            id: `id_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-            num: scannedData
-          },
-          history: newHistory
-        };
-      });
+    addLog(`[SCANNER] SUCCESS: ${scannedData}`);
+    
+    setQueue(prevQueue => {
+      let newHistory = [...prevQueue.history];
+      if (prevQueue.current) {
+         const finishedItem = { ...prevQueue.current, isNew: true };
+         const olderHistory = newHistory.map(item => ({ ...item, isNew: false }));
+         newHistory = [finishedItem, ...olderHistory].slice(0, 15);
+      }
+      return {
+        current: {
+          id: `id_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          num: scannedData
+        },
+        history: newHistory
+      };
     });
+
+    // --- Android WebView Repaint Hack ---
+    // Chromium < 95 often suppresses screen painting for background/hardware keyboard 
+    // events without direct touch interaction. We force a layout reflow.
+    setTimeout(() => {
+      // 1. Synthetic Resize (triggers Android compositor)
+      window.dispatchEvent(new Event('resize'));
+      
+      // 2. CSS Dom Mutation to force reflow
+      const body = document.body;
+      const originalPadding = body.style.paddingBottom;
+      body.style.paddingBottom = '0.001px';
+      void body.offsetHeight; // Force browser to calculate layout
+      
+      requestAnimationFrame(() => {
+        body.style.paddingBottom = originalPadding;
+      });
+    }, 50);
   };
 
   useBarcodeScanner({ onScan: handleScan });
@@ -285,7 +300,7 @@ export default function App() {
           <div className="w-[36px] h-[36px] bg-[#3D2B1F] rounded-[8px] flex items-center justify-center text-white font-[900] text-[18px]">
             Q
           </div>
-          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.0</span>
+          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.1</span>
         </div>
 
         {/* Demo Switch */}
