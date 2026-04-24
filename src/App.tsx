@@ -14,6 +14,7 @@ export default function App() {
 
   // Queue state for demonstration
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [paintToggle, setPaintToggle] = useState(false);
   
   type QueueItem = { id: string; num: string; isNew?: boolean };
   const [queue, setQueue] = useState<{ current: QueueItem | null; history: QueueItem[] }>({
@@ -99,22 +100,18 @@ export default function App() {
       };
     });
 
-    // --- Android WebView Repaint Hack ---
+    // --- Android WebView Repaint Hack (Option B) ---
     // Chromium < 95 often suppresses screen painting for background/hardware keyboard 
-    // events without direct touch interaction. We force a layout reflow.
+    // events without direct touch interaction. We force a state toggle and synthetic touch.
+    setPaintToggle(prev => !prev);
+    
     setTimeout(() => {
-      // 1. Synthetic Resize (triggers Android compositor)
+      // 1. Dispatch synthetic touch events to wake up the compositor
+      document.body.dispatchEvent(new Event('touchstart', { bubbles: true }));
+      document.body.dispatchEvent(new Event('touchend', { bubbles: true }));
+      
+      // 2. Synthetic Resize
       window.dispatchEvent(new Event('resize'));
-      
-      // 2. CSS Dom Mutation to force reflow
-      const body = document.body;
-      const originalPadding = body.style.paddingBottom;
-      body.style.paddingBottom = '0.001px';
-      void body.offsetHeight; // Force browser to calculate layout
-      
-      requestAnimationFrame(() => {
-        body.style.paddingBottom = originalPadding;
-      });
     }, 50);
   };
 
@@ -300,8 +297,14 @@ export default function App() {
           <div className="w-[36px] h-[36px] bg-[#3D2B1F] rounded-[8px] flex items-center justify-center text-white font-[900] text-[18px]">
             Q
           </div>
-          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.1</span>
+          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.2</span>
         </div>
+
+        {/* Repaint Hack Element */}
+        <div 
+          className="absolute pointer-events-none" 
+          style={{ width: '1px', height: '1px', opacity: 0.01, transform: paintToggle ? 'translateZ(1px)' : 'translateZ(0px)' }}
+        />
 
         {/* Demo Switch */}
         <div className="flex items-center pl-[24px]">
