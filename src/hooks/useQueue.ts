@@ -169,5 +169,18 @@ export function useQueue() {
     return () => clearInterval(interval);
   }, []);
 
-  return { queue, processScan };
+  const clearQueue = useCallback(() => {
+    setQueue({
+      current: null,
+      history: [],
+      pending: []
+    });
+    try {
+      localStorage.removeItem(STORAGE_KEY_QUEUE);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  return { queue, processScan, clearQueue };
 }

@@ -1,8 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 type ProcessScanFn = (scannedData: string) => void;
 
 export function useDemoSimulation(isDemoMode: boolean, processScan: ProcessScanFn) {
+  const nextAvailableOrderRef = useRef(1);
+  const pendingOrdersRef = useRef<{ id: number, type: string }[]>([]);
+  const generatedOrderCountRef = useRef(0);
+
   useEffect(() => {
     if (!isDemoMode) {
       return;
@@ -11,27 +15,23 @@ export function useDemoSimulation(isDemoMode: boolean, processScan: ProcessScanF
     let isMounted = true;
     let mainTimerId: NodeJS.Timeout;
     const pickupTimers = new Set<NodeJS.Timeout>();
-    
-    let nextAvailableOrder = 1;
-    let pendingOrders: { id: number, type: string }[] = [];
-    let generatedOrderCount = 0;
 
     const simulateNextOrder = () => {
       if (!isMounted) return;
 
-      while (pendingOrders.length < 5) {
+      while (pendingOrdersRef.current.length < 5) {
         const orderTypes = ['1', '1', '2', '2', '4', '5'];
         const randomType = orderTypes[Math.floor(Math.random() * orderTypes.length)];
-        pendingOrders.push({ id: nextAvailableOrder++, type: randomType });
+        pendingOrdersRef.current.push({ id: nextAvailableOrderRef.current++, type: randomType });
       }
 
-      const maxReorderIndex = Math.min(3, pendingOrders.length);
+      const maxReorderIndex = Math.min(3, pendingOrdersRef.current.length);
       const chosenIndex = Math.floor(Math.random() * maxReorderIndex);
-      const simulatedOrder = pendingOrders.splice(chosenIndex, 1)[0];
+      const simulatedOrder = pendingOrdersRef.current.splice(chosenIndex, 1)[0];
       
       const orderNumber = String(simulatedOrder.id).padStart(3, '0');
       const orderType = simulatedOrder.type;
-      generatedOrderCount++;
+      generatedOrderCountRef.current++;
 
       const MSG_TYPE_READY = '1';
       const MSG_TYPE_PICKED_UP = '0';
@@ -40,7 +40,7 @@ export function useDemoSimulation(isDemoMode: boolean, processScan: ProcessScanF
       
       const NORMAL_DELAY_MS = Math.floor(Math.random() * 290000) + 10000;
       const LONG_DELAY_MS = 600000; // 10 minutes for slow pickup logic validation
-      let simulatedPickupDelay = (generatedOrderCount % 20 === 0) ? LONG_DELAY_MS : NORMAL_DELAY_MS;
+      let simulatedPickupDelay = (generatedOrderCountRef.current % 20 === 0) ? LONG_DELAY_MS : NORMAL_DELAY_MS;
       
       const preparePhaseTimer = setTimeout(() => {
         if (!isMounted) return;

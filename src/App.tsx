@@ -8,9 +8,20 @@ import { useDemoSimulation } from './hooks/useDemoSimulation';
 import { OrderTypeBadge, ClockWidget } from './components/Widgets';
 
 export default function App() {
-  const [isDemoMode, setIsDemoMode] = useState(false);
-  const { queue, processScan } = useQueue();
+  const [isDemoMode, setIsDemoMode] = useState(true);
+  const { queue, processScan, clearQueue } = useQueue();
   const { logs, addLog, clearLogs, runDiagnostics } = useMetricsLogger();
+
+  const testStartTime = React.useMemo(() => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }, []);
+
+  const handleClearData = useCallback(() => {
+    clearLogs();
+    clearQueue();
+  }, [clearLogs, clearQueue]);
 
   const handleScan = useCallback((scannedData: string) => {
     const { safeData, success } = processScan(scannedData);
@@ -58,10 +69,15 @@ export default function App() {
         <div className="w-[65%] h-full relative rounded-[32px] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.05)] border-[8px] border-white flex flex-col bg-[#1E1E1E] text-[#D4D4D4] p-6 font-mono">
           <div className="flex border-b border-[#333] pb-4 mb-4 items-center justify-between shrink-0">
              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-               System Logs (Scanner Debugging)
+               System Monitor & Recovery Logs
              </h2>
              <div className="flex gap-2">
-               {/* Button to run hardware diagnostics */}
+               <button 
+                 onClick={() => window.location.reload()} 
+                 className="text-[13px] bg-red-500/20 text-red-500 hover:bg-red-500/30 px-3 py-1.5 rounded-lg transition-colors font-bold border border-red-500/30"
+               >
+                 Simulate OS Crash
+               </button>
                <button 
                  onClick={runDiagnostics} 
                  className="text-[13px] bg-[#3B82F6]/20 text-[#3B82F6] hover:bg-[#3B82F6]/30 px-3 py-1.5 rounded-lg transition-colors font-bold"
@@ -73,10 +89,10 @@ export default function App() {
                  onClick={() => addLog('Test event triggered manually!')} 
                  className="text-[13px] bg-[#22C55E]/20 text-[#22C55E] hover:bg-[#22C55E]/30 px-3 py-1.5 rounded-lg transition-colors font-bold"
                >
-                 Test
+                 Test Event
                </button>
                <button 
-                 onClick={clearLogs} 
+                 onClick={handleClearData} 
                  className="text-[13px] bg-[#333] text-white hover:bg-[#444] px-3 py-1.5 rounded-lg transition-colors"
                >
                  Clear Logs
@@ -186,12 +202,12 @@ export default function App() {
           <div className="w-[36px] h-[36px] bg-[#3D2B1F] rounded-[8px] flex items-center justify-center text-white font-[900] text-[18px]">
             Q
           </div>
-          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.22</span>
+          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.24</span>
         </div>
 
-        {/* Demo Switch */}
+        {/* Demo Switch and Test Start Time */}
         <div className="flex items-center pl-[24px]">
-          <label className="flex items-center cursor-pointer group">
+          <label className="flex items-center cursor-pointer group pr-[16px] border-r border-[#EFEBE4]">
             <div className="relative">
               <input 
                 type="checkbox" 
@@ -206,6 +222,10 @@ export default function App() {
               Demo
             </span>
           </label>
+          <div className="pl-[16px] flex flex-col justify-center">
+            <span className="text-[11px] font-[600] text-[#999] tracking-wider uppercase">測試開始時間</span>
+            <span className="text-[13px] font-[700] text-[#1A1A1A] tabular-nums tracking-wide">{testStartTime}</span>
+          </div>
         </div>
 
         {/* Empty space filling the center */}
