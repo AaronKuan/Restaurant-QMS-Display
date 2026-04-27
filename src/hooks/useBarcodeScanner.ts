@@ -38,7 +38,10 @@ export function useBarcodeScanner({ onScan, timeout = 500 }: UseBarcodeScannerOp
 
       // Collect normal characters (length === 1 ignores Shift, Control, etc.)
       if (e.key.length === 1) {
-        bufferRef.current += e.key;
+        // SECURITY FIX: Limit buffer size to prevent memory overflow (DoS) attacks
+        if (bufferRef.current.length < 128) {
+          bufferRef.current += e.key;
+        }
       }
     };
 

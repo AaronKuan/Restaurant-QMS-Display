@@ -7,6 +7,9 @@
     from { color: #22C55E; }
     to { color: #1A1A1A; }
   }
+  .animate-number-fade {
+    animation: fadeToBlack 2s linear 3s both;
+  }
 }
 
 body {
