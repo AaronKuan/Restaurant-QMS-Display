@@ -103,10 +103,19 @@ export function useMetricsLogger() {
         }
       }
 
+      let memoryStr = 'Not Supported in this Browser';
+      const perf = window.performance as any;
+      if (perf && perf.memory) {
+        const usedMB = Math.round(perf.memory.usedJSHeapSize / 1024 / 1024);
+        const limitMB = Math.round(perf.memory.jsHeapSizeLimit / 1024 / 1024);
+        memoryStr = `${usedMB} MB (Max Limit: ${limitMB} MB)`;
+      }
+
       addLog(`=== [ SYSTEM INFO ] ===`);
       addLog(`OS & Core: ${os} | ${browser}`);
       addLog(`Hardware: ${cores} Cores | ${ram} GB RAM (Est.)`);
       addLog(`Display: ${window.screen.width}x${window.screen.height} (Ratio: ${window.devicePixelRatio})`);
+      addLog(`Current Memory: ${memoryStr}`);
       addLog(`Network: ${network}`);
       addLog(`Storage: ${storageStr}`);
       addLog(`User-Agent: ${ua}`);

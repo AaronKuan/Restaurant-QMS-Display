@@ -202,7 +202,7 @@ export default function App() {
           <div className="w-[36px] h-[36px] bg-[#3D2B1F] rounded-[8px] flex items-center justify-center text-white font-[900] text-[18px]">
             Q
           </div>
-          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.24</span>
+          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.25</span>
         </div>
 
         {/* Demo Switch and Test Start Time */}
