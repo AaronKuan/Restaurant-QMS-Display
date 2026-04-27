@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BellRing, CloudSun } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useBarcodeScanner } from './hooks/useBarcodeScanner';
@@ -12,14 +12,14 @@ export default function App() {
   const { queue, processScan } = useQueue();
   const { logs, addLog, clearLogs, runDiagnostics } = useMetricsLogger();
 
-  const handleScan = (scannedData: string) => {
+  const handleScan = useCallback((scannedData: string) => {
     const { safeData, success } = processScan(scannedData);
     if (success) {
       addLog(`[SCANNER] SUCCESS: ${safeData}`);
     } else {
       addLog(`[SCANNER] IGNORED: Invalid format`);
     }
-  };
+  }, [processScan, addLog]);
 
   useBarcodeScanner({ onScan: handleScan });
   useDemoSimulation(isDemoMode, handleScan);
