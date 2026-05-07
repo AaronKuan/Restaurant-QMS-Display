@@ -9,7 +9,7 @@ import { useDemoSimulation } from './hooks/useDemoSimulation';
 import { OrderTypeBadge, ClockWidget } from './components/Widgets';
 
 export default function App() {
-  const [isDemoMode, setIsDemoMode] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const { queue, processScan, clearQueue } = useQueue();
   const { logs, addLog, clearLogs, runDiagnostics } = useMetricsLogger();
 
