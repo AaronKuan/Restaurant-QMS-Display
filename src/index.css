@@ -19,3 +19,9 @@ body {
   background-color: #F8F7F2; /* Neutral Bento background */
   color: #1A1A1A;
 }
+
+html {
+  /* Prevent old Android/WebView font autosizing drift */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}

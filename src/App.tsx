@@ -59,9 +59,24 @@ export default function App() {
     (currentPage + 1) * ITEMS_PER_PAGE
   );
 
+  useEffect(() => {
+    const setAppVh = () => {
+      const safeVh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--app-vh', `${safeVh}px`);
+    };
+    setAppVh();
+    window.addEventListener('resize', setAppVh);
+    window.addEventListener('orientationchange', setAppVh);
+    return () => {
+      window.removeEventListener('resize', setAppVh);
+      window.removeEventListener('orientationchange', setAppVh);
+    };
+  }, []);
+
   return (
     <div 
-      className="h-screen w-screen flex flex-col p-6 gap-6 font-sans text-[#1A1A1A] bg-[#F8F7F2] overflow-hidden box-border"
+      className="w-screen flex flex-col p-[clamp(12px,1.2vw,24px)] gap-[clamp(12px,1.2vw,24px)] font-sans text-[#1A1A1A] bg-[#F8F7F2] overflow-hidden box-border"
+      style={{ height: 'calc(var(--app-vh, 1vh) * 100)' }}
       tabIndex={0}
     >
       <input
@@ -86,12 +101,12 @@ export default function App() {
       <div className="flex-1 flex flex-row gap-6 min-h-0">
         
         {/* Left Side: Temporary System Logs Viewer for Debugging */}
-        <div className="w-[65%] h-full relative rounded-[32px] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.05)] border-[8px] border-white flex flex-col bg-[#1E1E1E] text-[#D4D4D4] p-6 font-mono">
-          <div className="flex border-b border-[#333] pb-4 mb-4 items-center justify-between shrink-0">
+        <div className="w-[65%] h-full relative rounded-[32px] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.05)] border-[8px] border-white flex flex-col bg-[#1E1E1E] text-[#D4D4D4] p-[clamp(12px,1.2vw,24px)] font-mono min-w-0">
+          <div className="flex border-b border-[#333] pb-4 mb-4 items-center justify-between shrink-0 gap-2 flex-wrap">
              <h2 className="text-xl font-bold text-white flex items-center gap-2">
                System Monitor & Recovery Logs
              </h2>
-             <div className="flex gap-2">
+             <div className="flex gap-2 flex-wrap">
                <button 
                  onClick={() => window.location.reload()} 
                  className="text-[13px] bg-red-500/20 text-red-500 hover:bg-red-500/30 px-3 py-1.5 rounded-lg transition-colors font-bold border border-red-500/30"
@@ -137,16 +152,16 @@ export default function App() {
         </div>
 
         {/* Right Side: Vertical Panel for Queue Status */}
-        <div className="w-[35%] h-full flex flex-col gap-[20px]">
+        <div className="w-[35%] h-full flex flex-col gap-[clamp(12px,1vw,20px)] min-w-0">
           
           {/* Top Section: Pickup Now */}
-          <div className="h-[40%] bg-white rounded-[28px] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col relative overflow-hidden shrink-0">
+          <div className="h-[40%] bg-white rounded-[28px] p-[clamp(12px,1.5vw,32px)] shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col relative overflow-hidden shrink-0 min-h-0">
             <div className="flex items-center gap-2 mb-2">
               <div className="bg-[#22C55E]/10 p-[10px] rounded-full">
                 <BellRing size={24} className="text-[#22C55E]" strokeWidth={3} />
               </div>
-              <h2 className="text-[24px] font-[700] text-[#1A1A1A] m-0 flex items-baseline">
-                請取餐 <span className="text-[16px] opacity-50 font-[500] ml-2 tracking-wide">PICKUP</span>
+              <h2 className="text-[clamp(18px,1.5vw,24px)] font-[700] text-[#1A1A1A] m-0 flex items-baseline min-w-0">
+                請取餐 <span className="text-[clamp(12px,1vw,16px)] opacity-50 font-[500] ml-2 tracking-wide">PICKUP</span>
               </h2>
             </div>
 
@@ -159,10 +174,10 @@ export default function App() {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 1, transition: { duration: 0 } }}
                     transition={{ type: "spring", bounce: 0.75, duration: 1.2 }}
-                    className="absolute flex items-center justify-center gap-6 text-[#22C55E]"
+                    className="absolute flex items-center justify-center gap-6 text-[#22C55E] max-w-full min-w-0 px-2"
                   >
                     <OrderTypeBadge type={queue.current.orderType} size="large" />
-                    <span className="text-[120px] font-[800] tracking-[-4px] leading-none">
+                    <span className="text-[clamp(64px,6vw,120px)] font-[800] tracking-[-0.03em] leading-none max-w-[18rem] truncate">
                       {queue.current.num}
                     </span>
                   </motion.div>
@@ -172,7 +187,7 @@ export default function App() {
           </div>
 
           {/* Bottom Section: Completed History (No Header) */}
-          <div className="flex-1 bg-[#E8E6E1] rounded-[28px] px-8 py-4 flex flex-col min-h-0 overflow-hidden shrink-0">
+          <div className="flex-1 bg-[#E8E6E1] rounded-[28px] px-[clamp(12px,1.5vw,32px)] py-[clamp(10px,1vw,16px)] flex flex-col min-h-0 overflow-hidden shrink-0">
             {totalPages > 1 && (
               <div className="flex justify-center gap-2 pb-2">
                 {Array.from({ length: totalPages }).map((_, i) => (
@@ -180,8 +195,8 @@ export default function App() {
                 ))}
               </div>
             )}
-            <div className="flex-1 overflow-hidden flex flex-col justify-center">
-               <div className="grid grid-rows-5 grid-flow-col gap-y-[12px] gap-x-[12px] content-center text-left pl-2 h-full">
+            <div className="flex-1 overflow-hidden flex flex-col justify-center min-h-0">
+               <div className="grid grid-rows-5 grid-flow-col gap-y-[clamp(8px,0.7vw,12px)] gap-x-[clamp(8px,0.7vw,12px)] content-start text-left pl-2 h-full min-h-0">
                   {displayedHistory.map((item, idx) => (
                     <motion.div 
                       layout
@@ -191,7 +206,7 @@ export default function App() {
                       transition={{ 
                         default: { type: "spring", bounce: 0.2, duration: 1.0 }
                       }}
-                      className="flex items-center"
+                      className="flex items-center min-w-0"
                     >
                       <div 
                         className={`flex items-center gap-3 ${
@@ -201,7 +216,7 @@ export default function App() {
                         } ${item.uiState === 'inactive' ? 'opacity-30' : ''}`}
                       >
                         <OrderTypeBadge type={item.orderType} size="small" />
-                        <span className="text-[36px] font-[800] tracking-[-1px] tabular-nums whitespace-nowrap overflow-hidden text-ellipsis">
+                        <span className="text-[clamp(24px,2vw,36px)] font-[800] tracking-[-0.02em] tabular-nums whitespace-nowrap overflow-hidden text-ellipsis min-w-0">
                           {item.num}
                         </span>
                       </div>
@@ -215,19 +230,19 @@ export default function App() {
       </div>
 
       {/* Bottom Bar: Information Strip */}
-      <div className="h-[80px] bg-white rounded-[20px] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-black/5 flex flex-row items-center px-[32px] relative shrink-0">
+      <div className="h-[clamp(68px,7vh,84px)] bg-white rounded-[20px] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-black/5 flex flex-row items-center px-[clamp(12px,1.5vw,32px)] relative shrink-0 min-w-0">
         
         {/* System Name / Logo */}
-        <div className="flex items-center gap-4 pr-[24px] border-r border-[#EFEBE4] shrink-0 z-10 bg-white">
+        <div className="flex items-center gap-4 pr-[clamp(10px,1.2vw,24px)] border-r border-[#EFEBE4] shrink-0 z-10 bg-white min-w-0">
           <div className="w-[36px] h-[36px] bg-[#3D2B1F] rounded-[8px] flex items-center justify-center text-white font-[900] text-[18px]">
             Q
           </div>
-          <span className="font-[800] text-[18px] tracking-[-0.5px] text-[#1A1A1A]">QMS v1.1.25</span>
+          <span className="font-[800] text-[clamp(14px,1vw,18px)] tracking-[-0.5px] text-[#1A1A1A] truncate">QMS v1.1.25</span>
         </div>
 
         {/* Demo Switch and Test Start Time */}
-        <div className="flex items-center pl-[24px]">
-          <label className="flex items-center cursor-pointer group pr-[16px] border-r border-[#EFEBE4]">
+        <div className="flex items-center pl-[clamp(10px,1.2vw,24px)] min-w-0">
+          <label className="flex items-center cursor-pointer group pr-[clamp(8px,1vw,16px)] border-r border-[#EFEBE4]">
             <div className="relative">
               <input 
                 type="checkbox" 
@@ -242,9 +257,9 @@ export default function App() {
               Demo
             </span>
           </label>
-          <div className="pl-[16px] flex flex-col justify-center">
-            <span className="text-[11px] font-[600] text-[#999] tracking-wider uppercase">測試開始時間</span>
-            <span className="text-[13px] font-[700] text-[#1A1A1A] tabular-nums tracking-wide">{testStartTime}</span>
+          <div className="pl-[clamp(8px,1vw,16px)] flex flex-col justify-center min-w-0">
+            <span className="text-[11px] font-[600] text-[#999] tracking-wider uppercase truncate">測試開始時間</span>
+            <span className="text-[clamp(11px,0.8vw,13px)] font-[700] text-[#1A1A1A] tabular-nums tracking-wide truncate">{testStartTime}</span>
           </div>
         </div>
 
@@ -252,15 +267,15 @@ export default function App() {
         <div className="flex-1"></div>
 
         {/* Local Weather & Temperature */}
-        <div className="flex items-center gap-[12px] pr-[24px] border-r border-[#EFEBE4]">
+        <div className="flex items-center gap-[12px] pr-[clamp(10px,1.2vw,24px)] border-r border-[#EFEBE4] min-w-0">
           <div className="bg-[#EE7623]/10 p-[10px] rounded-[12px]">
             <CloudSun size={24} className="text-[#EE7623]" strokeWidth={2.5} />
           </div>
-          <div className="flex flex-col justify-center min-w-[80px]">
-            <div className="text-[22px] font-[700] text-[#1A1A1A] leading-none mb-[4px]">
+          <div className="flex flex-col justify-center min-w-[60px]">
+            <div className="text-[clamp(16px,1.5vw,22px)] font-[700] text-[#1A1A1A] leading-none mb-[4px]">
               26°C
             </div>
-            <div className="text-[12px] font-[600] text-[#999] tracking-wider leading-none">
+            <div className="text-[clamp(10px,0.8vw,12px)] font-[600] text-[#999] tracking-wider leading-none truncate">
               台北市 · 晴時多雲
             </div>
           </div>
