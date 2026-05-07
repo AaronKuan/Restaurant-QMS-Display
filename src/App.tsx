@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { BellRing, CloudSun } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useBarcodeScanner } from './hooks/useBarcodeScanner';
+import { useWebViewKioskFocus } from './hooks/useWebViewKioskFocus';
 import { useQueue } from './hooks/useQueue';
 import { useMetricsLogger } from './hooks/useMetricsLogger';
 import { useDemoSimulation } from './hooks/useDemoSimulation';
@@ -32,6 +33,8 @@ export default function App() {
     }
   }, [processScan, addLog]);
 
+  const { trapRef } = useWebViewKioskFocus();
+
   useBarcodeScanner({ onScan: handleScan });
   useDemoSimulation(isDemoMode, handleScan);
 
@@ -61,7 +64,24 @@ export default function App() {
       className="h-screen w-screen flex flex-col p-6 gap-6 font-sans text-[#1A1A1A] bg-[#F8F7F2] overflow-hidden box-border"
       tabIndex={0}
     >
-      
+      <input
+        ref={trapRef}
+        type="text"
+        readOnly
+        tabIndex={0}
+        aria-hidden
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
+        inputMode="none"
+        className="sr-only"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            (e.target as HTMLInputElement).value = '';
+          }
+        }}
+      />
+
       {/* Upper Section: Main Visual and Queue Panel */}
       <div className="flex-1 flex flex-row gap-6 min-h-0">
         
