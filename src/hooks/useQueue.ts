@@ -84,7 +84,10 @@ export function useQueue() {
       } else {
         if (!isCurrentlyDisplayed && !isIndisplayedHistory) {
           if (nextCurrent) {
-            nextPending.push({ ...nextCurrent, uiState: 'active', isNew: true, timestamp: Date.now() });
+            nextHistory = [
+              { ...nextCurrent, uiState: 'active', isNew: true, timestamp: Date.now() },
+              ...nextHistory.map(item => ({ ...item, isNew: false }))
+            ].slice(0, 100);
           }
           newOrder.timestamp = Date.now();
           newOrder.uiState = 'active';
@@ -106,30 +109,6 @@ export function useQueue() {
 
     return { safeData, success: true };
   }, []);
-
-  useEffect(() => {
-    if (queue.pending && queue.pending.length > 0) {
-      const VISUAL_DELAY_MS = 1200;
-      const timer = setTimeout(() => {
-        setQueue(prevQueue => {
-          if (!prevQueue.pending || prevQueue.pending.length === 0) return prevQueue;
-          
-          const validPendingItems = prevQueue.pending.filter(pendingItem => {
-             const alreadyInHistory = prevQueue.history.some(item => item.num === pendingItem.num);
-             const alreadyCurrent = prevQueue.current?.num === pendingItem.num;
-             return !alreadyInHistory && !alreadyCurrent;
-          });
-
-          return {
-            ...prevQueue,
-            history: [...validPendingItems, ...prevQueue.history.map(item => ({ ...item, isNew: false }))].slice(0, 100),
-            pending: []
-          };
-        });
-      }, VISUAL_DELAY_MS);
-      return () => clearTimeout(timer);
-    }
-  }, [queue.pending]);
 
   useEffect(() => {
     const STALE_CHECK_INTERVAL_MS = 1000;

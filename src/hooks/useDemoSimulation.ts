@@ -15,6 +15,13 @@ export function useDemoSimulation(isDemoMode: boolean, processScan: ProcessScanF
     let isMounted = true;
     let mainTimerId: NodeJS.Timeout;
     const pickupTimers = new Set<NodeJS.Timeout>();
+    const MAX_DEMO_ORDER_NUMBER = 999;
+
+    const getNextOrderId = () => {
+      const currentId = nextAvailableOrderRef.current;
+      nextAvailableOrderRef.current = currentId >= MAX_DEMO_ORDER_NUMBER ? 1 : currentId + 1;
+      return currentId;
+    };
 
     const simulateNextOrder = () => {
       if (!isMounted) return;
@@ -22,7 +29,7 @@ export function useDemoSimulation(isDemoMode: boolean, processScan: ProcessScanF
       while (pendingOrdersRef.current.length < 5) {
         const orderTypes = ['1', '1', '2', '2', '4', '5'];
         const randomType = orderTypes[Math.floor(Math.random() * orderTypes.length)];
-        pendingOrdersRef.current.push({ id: nextAvailableOrderRef.current++, type: randomType });
+        pendingOrdersRef.current.push({ id: getNextOrderId(), type: randomType });
       }
 
       const maxReorderIndex = Math.min(3, pendingOrdersRef.current.length);
@@ -38,8 +45,8 @@ export function useDemoSimulation(isDemoMode: boolean, processScan: ProcessScanF
 
       processScan(`${orderNumber},${orderType},${MSG_TYPE_READY}`);
       
-      const NORMAL_DELAY_MS = Math.floor(Math.random() * 290000) + 10000;
-      const LONG_DELAY_MS = 600000; // 10 minutes for slow pickup logic validation
+      const NORMAL_DELAY_MS = Math.floor(Math.random() * 70000) + 20000; // 20s ~ 90s
+      const LONG_DELAY_MS = 150000; // 150s edge case every 20 orders
       let simulatedPickupDelay = (generatedOrderCountRef.current % 20 === 0) ? LONG_DELAY_MS : NORMAL_DELAY_MS;
       
       const preparePhaseTimer = setTimeout(() => {

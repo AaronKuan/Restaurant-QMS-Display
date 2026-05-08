@@ -196,7 +196,7 @@ export default function App() {
               </div>
             )}
             <div className="flex-1 overflow-hidden flex flex-col justify-center min-h-0">
-               <div className="grid grid-rows-5 grid-flow-col gap-y-[clamp(8px,0.7vw,12px)] gap-x-[clamp(8px,0.7vw,12px)] content-start text-left pl-2 h-full min-h-0">
+               <div className="grid grid-cols-3 grid-rows-5 grid-flow-col gap-y-[clamp(8px,0.7vw,12px)] gap-x-[clamp(8px,0.7vw,12px)] content-start text-left pl-2 h-full min-h-0">
                   {displayedHistory.map((item, idx) => (
                     <motion.div 
                       layout
@@ -237,7 +237,7 @@ export default function App() {
           <div className="w-[36px] h-[36px] bg-[#3D2B1F] rounded-[8px] flex items-center justify-center text-white font-[900] text-[18px]">
             Q
           </div>
-          <span className="font-[800] text-[clamp(14px,1vw,18px)] tracking-[-0.5px] text-[#1A1A1A] truncate">QMS v1.1.25</span>
+          <span className="font-[800] text-[clamp(14px,1vw,18px)] tracking-[-0.5px] text-[#1A1A1A] truncate">QMS v20260508A</span>
         </div>
 
         {/* Demo Switch and Test Start Time */}
