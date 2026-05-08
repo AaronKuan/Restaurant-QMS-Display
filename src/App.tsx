@@ -9,22 +9,22 @@ import { OrderTypeBadge, ClockWidget } from './components/Widgets';
 
 const HERO_SLIDES = [
   {
-    src: 'https://i.pinimg.com/1200x/a2/26/07/a226076c1498919907ff9596acfb0874.jpg',
+    src: '/slides/01-carbonara.jpg',
     alt: 'Creamy carbonara pasta',
     title: 'Creamy Carbonara',
   },
   {
-    src: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1400&q=80',
+    src: '/slides/02-garden-bowl.jpg',
     alt: 'Fresh salad plate',
     title: 'Fresh Garden Bowl',
   },
   {
-    src: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?auto=format&fit=crop&w=1400&q=80',
+    src: '/slides/03-cheese-pizza.jpg',
     alt: 'Cheese pizza',
     title: 'Cheese Pizza',
   },
   {
-    src: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=1400&q=80',
+    src: '/slides/04-chef-special.jpg',
     alt: 'Healthy food platter',
     title: 'Chef Special',
   },
