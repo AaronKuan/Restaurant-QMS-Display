@@ -31,7 +31,7 @@ const HERO_SLIDES = [
 ];
 
 export default function App() {
-  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const { queue, processScan } = useQueue();
 
@@ -93,6 +93,13 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    HERO_SLIDES.forEach((slide) => {
+      const img = new Image();
+      img.src = slide.src;
+    });
+  }, []);
+
   return (
     <div 
       className="w-screen flex flex-col p-[clamp(12px,1.2vw,24px)] gap-[clamp(12px,1.2vw,24px)] font-sans text-[#1A1A1A] bg-[#F8F7F2] overflow-hidden box-border"
@@ -122,7 +129,7 @@ export default function App() {
         
         {/* Left Side: Food Image Carousel */}
         <div className="w-[65%] h-full relative rounded-[32px] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.05)] border-[8px] border-white bg-black min-w-0">
-          <AnimatePresence mode="wait">
+          <AnimatePresence initial={false} mode="sync">
             <motion.img
               key={HERO_SLIDES[currentSlide].src}
               src={HERO_SLIDES[currentSlide].src}
@@ -130,7 +137,7 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.8, ease: 'easeInOut' }}
               className="absolute inset-0 w-full h-full object-cover"
             />
           </AnimatePresence>
