@@ -4,14 +4,36 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useBarcodeScanner } from './hooks/useBarcodeScanner';
 import { useWebViewKioskFocus } from './hooks/useWebViewKioskFocus';
 import { useQueue } from './hooks/useQueue';
-import { useMetricsLogger } from './hooks/useMetricsLogger';
 import { useDemoSimulation } from './hooks/useDemoSimulation';
 import { OrderTypeBadge, ClockWidget } from './components/Widgets';
 
+const HERO_SLIDES = [
+  {
+    src: 'https://i.pinimg.com/1200x/a2/26/07/a226076c1498919907ff9596acfb0874.jpg',
+    alt: 'Creamy carbonara pasta',
+    title: 'Creamy Carbonara',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1400&q=80',
+    alt: 'Fresh salad plate',
+    title: 'Fresh Garden Bowl',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?auto=format&fit=crop&w=1400&q=80',
+    alt: 'Cheese pizza',
+    title: 'Cheese Pizza',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=1400&q=80',
+    alt: 'Healthy food platter',
+    title: 'Chef Special',
+  },
+];
+
 export default function App() {
   const [isDemoMode, setIsDemoMode] = useState(false);
-  const { queue, processScan, clearQueue } = useQueue();
-  const { logs, addLog, clearLogs, runDiagnostics } = useMetricsLogger();
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const { queue, processScan } = useQueue();
 
   const testStartTime = React.useMemo(() => {
     const d = new Date();
@@ -19,19 +41,9 @@ export default function App() {
     return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   }, []);
 
-  const handleClearData = useCallback(() => {
-    clearLogs();
-    clearQueue();
-  }, [clearLogs, clearQueue]);
-
   const handleScan = useCallback((scannedData: string) => {
-    const { safeData, success } = processScan(scannedData);
-    if (success) {
-      addLog(`[SCANNER] SUCCESS: ${safeData}`);
-    } else {
-      addLog(`[SCANNER] IGNORED: Invalid format`);
-    }
-  }, [processScan, addLog]);
+    processScan(scannedData);
+  }, [processScan]);
 
   const { trapRef } = useWebViewKioskFocus();
 
@@ -73,6 +85,14 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (HERO_SLIDES.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 10000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <div 
       className="w-screen flex flex-col p-[clamp(12px,1.2vw,24px)] gap-[clamp(12px,1.2vw,24px)] font-sans text-[#1A1A1A] bg-[#F8F7F2] overflow-hidden box-border"
@@ -100,54 +120,40 @@ export default function App() {
       {/* Upper Section: Main Visual and Queue Panel */}
       <div className="flex-1 flex flex-row gap-6 min-h-0">
         
-        {/* Left Side: Temporary System Logs Viewer for Debugging */}
-        <div className="w-[65%] h-full relative rounded-[32px] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.05)] border-[8px] border-white flex flex-col bg-[#1E1E1E] text-[#D4D4D4] p-[clamp(12px,1.2vw,24px)] font-mono min-w-0">
-          <div className="flex border-b border-[#333] pb-4 mb-4 items-center justify-between shrink-0 gap-2 flex-wrap">
-             <h2 className="text-xl font-bold text-white flex items-center gap-2">
-               System Monitor & Recovery Logs
-             </h2>
-             <div className="flex gap-2 flex-wrap">
-               <button 
-                 onClick={() => window.location.reload()} 
-                 className="text-[13px] bg-red-500/20 text-red-500 hover:bg-red-500/30 px-3 py-1.5 rounded-lg transition-colors font-bold border border-red-500/30"
-               >
-                 Simulate OS Crash
-               </button>
-               <button 
-                 onClick={runDiagnostics} 
-                 className="text-[13px] bg-[#3B82F6]/20 text-[#3B82F6] hover:bg-[#3B82F6]/30 px-3 py-1.5 rounded-lg transition-colors font-bold"
-               >
-                 SYSTEM INFO
-               </button>
-               {/* A button to test the logger */}
-               <button 
-                 onClick={() => addLog('Test event triggered manually!')} 
-                 className="text-[13px] bg-[#22C55E]/20 text-[#22C55E] hover:bg-[#22C55E]/30 px-3 py-1.5 rounded-lg transition-colors font-bold"
-               >
-                 Test Event
-               </button>
-               <button 
-                 onClick={handleClearData} 
-                 className="text-[13px] bg-[#333] text-white hover:bg-[#444] px-3 py-1.5 rounded-lg transition-colors"
-               >
-                 Clear Logs
-               </button>
-             </div>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto flex flex-col gap-2">
-             {logs.length === 0 ? (
-               <div className="h-full flex items-center justify-center">
-                 <p className="opacity-40 italic text-[16px]">Ready to receive barcode scanner input...</p>
-               </div>
-             ) : (
-               logs.map(log => (
-                 <div key={log.id} className="flex gap-4 border-b border-white/5 pb-2">
-                   <span className="text-[#888] shrink-0">[{log.time}]</span>
-                   <span className="break-all text-white font-[500]">{log.message}</span>
-                 </div>
-               ))
-             )}
+        {/* Left Side: Food Image Carousel */}
+        <div className="w-[65%] h-full relative rounded-[32px] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.05)] border-[8px] border-white bg-black min-w-0">
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={HERO_SLIDES[currentSlide].src}
+              src={HERO_SLIDES[currentSlide].src}
+              alt={HERO_SLIDES[currentSlide].alt}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.6 }}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          </AnimatePresence>
+
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+
+          <div className="absolute bottom-0 left-0 right-0 p-[clamp(12px,1.2vw,24px)] flex items-end justify-between gap-4">
+            <h2 className="text-[clamp(18px,1.8vw,30px)] font-[800] text-white tracking-[-0.02em] drop-shadow-md truncate">
+              {HERO_SLIDES[currentSlide].title}
+            </h2>
+            <div className="flex items-center gap-2 shrink-0">
+              {HERO_SLIDES.map((slide, index) => (
+                <button
+                  type="button"
+                  key={slide.src}
+                  aria-label={`Go to slide ${index + 1}`}
+                  onClick={() => setCurrentSlide(index)}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    index === currentSlide ? 'w-8 bg-white' : 'w-2 bg-white/50'
+                  }`}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
