@@ -31,7 +31,7 @@ const HERO_SLIDES = [
 ];
 
 export default function App() {
-  const [isDemoMode, setIsDemoMode] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const { queue, processScan } = useQueue();
 

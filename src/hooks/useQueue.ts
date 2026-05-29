@@ -10,34 +10,23 @@ export type QueueItem = {
   timestamp?: number;
 };
 
+const EMPTY_QUEUE = {
+  current: null as QueueItem | null,
+  history: [] as QueueItem[],
+  pending: [] as QueueItem[],
+};
+
 export function useQueue() {
-  const STORAGE_KEY_QUEUE = 'qms_queue_state';
+  const [queue, setQueue] = useState(EMPTY_QUEUE);
 
-  const [queue, setQueue] = useState<{
-    current: QueueItem | null;
-    history: QueueItem[];
-    pending: QueueItem[];
-  }>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY_QUEUE);
-      if (stored) return JSON.parse(stored);
-    } catch {
-      // ignore
-    }
-    return {
-      current: null,
-      history: [],
-      pending: []
-    };
-  });
-
+  // Clear any legacy persisted queue on each page load
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(queue));
+      localStorage.removeItem('qms_queue_state');
     } catch {
       // ignore
     }
-  }, [queue]);
+  }, []);
 
   const processScan = useCallback((scannedData: string) => {
     const safeData = scannedData.slice(0, 100);
@@ -149,16 +138,7 @@ export function useQueue() {
   }, []);
 
   const clearQueue = useCallback(() => {
-    setQueue({
-      current: null,
-      history: [],
-      pending: []
-    });
-    try {
-      localStorage.removeItem(STORAGE_KEY_QUEUE);
-    } catch {
-      // ignore
-    }
+    setQueue(EMPTY_QUEUE);
   }, []);
 
   return { queue, processScan, clearQueue };
